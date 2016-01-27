@@ -1,5 +1,10 @@
 # Setup Test
-Once you downloaded all 3 files. Please run Python mnistExample.py
+Once you downloaded all 3 files, please run the following code in your terminal
+
+```python
+python mnistExample.py
+```
+
 If you see the following output at the end, your installation of TensorFlow is completed.
 ```
 Accuracy at step 0: train: 0.12
