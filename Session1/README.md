@@ -1,21 +1,2 @@
-# Setup Test
-Once you downloaded all 3 files, please run the following code in your terminal
-
-```python
-python mnistExample.py
-```
-
-If you see the following output at the end, your installation of TensorFlow is completed.
-```
-Accuracy at step 0: train: 0.12
-Accuracy at step 100: train: 0.78
-Accuracy at step 200: train: 0.82
-Accuracy at step 300: train: 0.91
-Accuracy at step 400: train: 0.71
-Accuracy at step 500: train: 0.88
-Accuracy at step 600: train: 0.84
-Accuracy at step 700: train: 0.84
-Accuracy at step 800: train: 0.84
-Accuracy at step 900: train: 0.85
-Test accuracy: 0.8522
-```
+#An Intuitive Introduction to Artificial Neural Networks and Deep Learning
+These notes are an introduction to artificial neural networks, deep learning, and graph-based computation.  Code that was formerly located here has been moved to Session 2.
