@@ -6,14 +6,14 @@ Session 1 discuses background theory for artificial neural networks (ANNs), deep
 Session 2 introduces the ANNs covered in session 1 in the form of TensorFlow code.
 
 
-The CC-BY-ND license applies to the workshop notes only, not the code.  The code is licensed under the MIT three-clause license (included here at in each source file) where applicable.  The code in the file "input_data.py" found in Session1 is redistributed verbatim from Google's TensorFlow tutorial (<a href="www.tensorflow.com"/>) where it appears to be unlicensed.  This code appears to originate with Yann LeCun, <a href="http://yann.lecun.com/exdb/mnist/"/>.
+The CC-BY-ND license applies to the workshop notes only, not the code.  The code is licensed under the MIT three-clause license (included here at in each source file) where applicable.  The code in the file "input_data.py" found in Session1 is redistributed verbatim from <a href="www.tensorflow.com">Google's TensorFlow tutorial</a> where it appears to be unlicensed.  This code appears to originate with <a href="http://yann.lecun.com/exdb/mnist/">Yann LeCun</a>.
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
 
 
 The MIT License (MIT)
 
-Copyright (c) 2015 Robert A. Brown (<a href="www.robbtech.com"/>)
+Copyright (c) 2015 <a href="www.robbtech.com">Robert A. Brown</a> (<a href="https://github.com/robb-brown">Github</a>)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
