@@ -1,4 +1,4 @@
-The MIT License (MIT)
+"""The MIT License (MIT)
 
 Copyright (c) 2016 Robert A. Brown (www.robbtech.com)
 
@@ -19,7 +19,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
+"""
 
 
 import tensorflow as tf
@@ -46,24 +46,78 @@ def conv2d(x,W,name=None):
 def max_pool_2x2(x,name=None):
 	# return an op that performs max pooling across a 2D image
 	return tf.nn.max_pool(x,ksize=[1,2,2,1],strides=[1,2,2,1],padding='SAME',name=name)
+
+def max_pool(x,shape,name=None):
+	# return an op that performs max pooling across a 2D image
+	return tf.nn.max_pool(x,ksize=[1]+shape+[1],strides=[1]+shape+[1],padding='SAME',name=name)
 	
 	
-def plotFields(layer,fieldShape,figOffset=1,cmap=None):
+def plotFields(layer,fieldShape=None,channel=None,figOffset=1,cmap=None,padding=0.01):
 	# Receptive Fields Summary
-	ix,iy = fieldShape
 	W = layer.W
 	wp = W.eval().transpose();
-	fields = np.reshape(wp,list(wp.shape[0:-1])+fieldShape)
+	if len(np.shape(wp)) < 4:		# Fully connected layer, has no shape
+		fields = np.reshape(wp,list(wp.shape[0:-1])+fieldShape)	
+	else:			# Convolutional layer already has shape
+		features, channels, iy, ix = np.shape(wp)
+		if channel is not None:
+			fields = wp[:,channel,:,:]
+		else:
+			fields = np.reshape(wp,[features*channels,iy,ix])
+
+	perRow = int(math.floor(math.sqrt(fields.shape[0])))
+	perColumn = int(math.ceil(fields.shape[0]/float(perRow)))
+
+	fig = mpl.figure(figOffset); mpl.clf()
+	
+	# Using image grid
+	from mpl_toolkits.axes_grid1 import ImageGrid
+	grid = ImageGrid(fig,111,nrows_ncols=(perRow,perColumn),axes_pad=padding,cbar_mode='single')
+	for i in range(0,np.shape(fields)[0]):
+		im = grid[i].imshow(fields[i],cmap=cmap); 
+
+	grid.cbar_axes[0].colorbar(im)
+	mpl.title('%s Receptive Fields' % layer.name)
+	
+	# old way
+	# fields2 = np.vstack([fields,np.zeros([perRow*perColumn-fields.shape[0]] + list(fields.shape[1:]))])
+	# tiled = []
+	# for i in range(0,perColumn*perRow,perColumn):
+	# 	tiled.append(np.hstack(fields2[i:i+perColumn]))
+	# 
+	# tiled = np.vstack(tiled)
+	# mpl.figure(figOffset); mpl.clf(); mpl.imshow(tiled,cmap=cmap); mpl.title('%s Receptive Fields' % layer.name); mpl.colorbar();
+	mpl.figure(figOffset+1); mpl.clf(); mpl.imshow(np.sum(np.abs(fields),0),cmap=cmap); mpl.title('%s Total Absolute Input Dependency' % layer.name); mpl.colorbar()
+
+
+
+def plotOutput(layer,feed_dict,fieldShape=None,channel=None,figOffset=1,cmap=None):
+	# Output summary
+	W = layer.output
+	wp = W.eval(feed_dict=feed_dict);
+	if len(np.shape(wp)) < 4:		# Fully connected layer, has no shape
+		temp = np.zeros(np.product(fieldShape)); temp[0:np.shape(wp.ravel())[0]] = wp.ravel()
+		fields = np.reshape(temp,[1]+fieldShape)
+	else:			# Convolutional layer already has shape
+		wp = np.rollaxis(wp,3,0)
+		features, channels, iy,ix = np.shape(wp)
+		if channel is not None:
+			fields = wp[:,channel,:,:]
+		else:
+			fields = np.reshape(wp,[features*channels,iy,ix])
+
 	perRow = int(math.floor(math.sqrt(fields.shape[0])))
 	perColumn = int(math.ceil(fields.shape[0]/float(perRow)))
 	fields2 = np.vstack([fields,np.zeros([perRow*perColumn-fields.shape[0]] + list(fields.shape[1:]))])
 	tiled = []
 	for i in range(0,perColumn*perRow,perColumn):
 		tiled.append(np.hstack(fields2[i:i+perColumn]))
-	
+
 	tiled = np.vstack(tiled)
-	mpl.figure(figOffset); mpl.clf(); mpl.imshow(tiled,cmap=cmap); mpl.title('%s Receptive Fields' % layer.name); mpl.colorbar();
-	mpl.figure(figOffset+1); mpl.clf(); mpl.imshow(np.sum(np.abs(fields),0),cmap=cmap); mpl.title('%s Total Absolute Input Dependency' % layer.name); mpl.colorbar()
+	if figOffset is not None:
+		mpl.figure(figOffset); mpl.clf(); 
+
+	mpl.imshow(tiled,cmap=cmap); mpl.title('%s Output' % layer.name); mpl.colorbar();
 
 
 
@@ -79,6 +133,7 @@ def train(session,trainingData,testingData,input,truth,cost,trainingStep,accurac
 
 	tf.initialize_all_variables().run()		# Take initial values and actually put them in variables
 	lastTime = 0; lastIterations = 0
+	print "Doing %d iterations" % iterations
 	for i in range(iterations):						# Do some training
 		batch = trainingData.next_batch(miniBatch)
 		if (i%100 == 0) or (time.time()-lastTime > 5):
@@ -187,11 +242,30 @@ class Conv2D(SoftMax):
 		self.output = tf.nn.relu(conv2d(self.input,self.W) + self.b)
 
 
+class ConvSoftMax(Conv2D):
+
+	def setupOutput(self):
+		self.output = tf.nn.softmax(conv2d(self.input,self.W) + self.b)
+
+
+
+
 class MaxPool2x2(UtilityLayer):
 
 	def initialize(self):
 		with tf.variable_scope(self.name):
 			self.output = max_pool_2x2(self.input)
+
+
+class MaxPool(UtilityLayer):
+	
+	def __init__(self,input,name,shape=[2,2]):
+		self.shape = shape
+		super(MaxPool,self).__init__(input,name)
+
+	def initialize(self):
+		with tf.variable_scope(self.name):
+			self.output = max_pool(self.input,shape=self.shape)
 
 
 class Dropout(UtilityLayer):
@@ -200,11 +274,12 @@ class Dropout(UtilityLayer):
 		self.input = input
 		self.name = name
 		self.initialize()
-
+		
 	def initialize(self):
 		with tf.variable_scope(self.name):
 			self.keepProb = tf.placeholder('float')			# Variable to hold the dropout probability
 			self.output = tf.nn.dropout(self.input,self.keepProb)
+			self.output.get_shape = self.input.get_shape		# DEBUG: remove this whenever TensorFlow fixes this bug
 
 
 
@@ -221,24 +296,24 @@ if __name__ == '__main__':
 #	L1 = ReLu(x,512,'relu1')
 #	L2 = ReLu(L1.output,128,'relu2')
 #	L3 = ReLu(L2.output,64,'relu3')
-	L4 = SoftMax(x,10,'softmax')
-	y = L4.output
-	trainDict = {}; testDict = trainDict
-	logName = 'logs/softmax'
+#	L4 = SoftMax(x,10,'softmax')
+#	y = L4.output
+#	trainDict = {}; testDict = trainDict
+#	logName = 'logs/softmax'
 
 
-	# xImage = tf.reshape(x,[-1,28,28,1])		# Reshape samples to 28x28x1 images
-	# L1 = Conv2D(xImage,[5,5,1,32],'Conv1')
-	# L2 = MaxPool2x2(L1.output,'MaxPool1')
-	# L3 = Conv2D(L2.output,[5,5,32,64],'Conv2')
-	# L4 = MaxPool2x2(L3.output,'MaxPool2')
-	# L5 = ReLu(L4.output,128,'relu1')
-	# L6 = Dropout(L5.output,'dropout')
-	# L7 = SoftMax(L5.output,10,'softmax')
-	# y = L7.output
-	# kp = 0.5; trainDict = {L6.keepProb:kp}
-	# kp = 1.0; testDict = {L6.keepProb:kp}
-	# logName = 'logs/Conv'
+	xImage = tf.reshape(x,[-1,28,28,1])		# Reshape samples to 28x28x1 images
+	L1 = Conv2D(xImage,[5,5,1,32],'Conv1')
+	L2 = MaxPool2x2(L1.output,'MaxPool1')
+	L3 = Conv2D(L2.output,[5,5,32,64],'Conv2')
+	L4 = MaxPool2x2(L3.output,'MaxPool2')
+	L5 = ReLu(L4.output,128,'relu1')
+	L6 = Dropout(L5.output,'dropout')
+	L7 = SoftMax(L5.output,10,'softmax')
+	y = L7.output
+	kp = 0.5; trainDict = {L6.keepProb:kp}
+	kp = 1.0; testDict = {L6.keepProb:kp}
+	logName = 'logs/Conv'
 
 	# Training and evaluation
 	crossEntropy = -tf.reduce_sum(y_*tf.log(y))		# cost function
