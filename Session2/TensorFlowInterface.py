@@ -121,17 +121,19 @@ def plotOutput(layer,feed_dict,fieldShape=None,channel=None,figOffset=1,cmap=Non
 
 
 
-def train(session,trainingData,testingData,input,truth,cost,trainingStep,accuracy,iterations=5000,miniBatch=100,trainDict={},testDict=None,logName=None):
+def train(session,trainingData,testingData,input,truth,cost,trainingStep,accuracy,iterations=5000,miniBatch=100,trainDict={},testDict=None,logName=None,initialize=True,addSummaryOps=True):
 	testDict = trainDict if testDict is None else testDict
 	
-	# Summary ops
-	costSummary = tf.scalar_summary("Cost Function", cost)
-	accuracySummary = tf.scalar_summary("accuracy", accuracy)
-	mergedSummary = tf.merge_all_summaries()
-	if logName is not None:
-		writer = tf.train.SummaryWriter(logName, session.graph_def)
+	if addSummaryOps:
+		costSummary = tf.scalar_summary("Cost Function", cost)
+		accuracySummary = tf.scalar_summary("accuracy", accuracy)
+		mergedSummary = tf.merge_all_summaries()
+		if logName is not None:
+			writer = tf.train.SummaryWriter(logName, session.graph_def)
 
-	tf.initialize_all_variables().run()		# Take initial values and actually put them in variables
+	if initialize:
+		tf.initialize_all_variables().run()		# Take initial values and actually put them in variables
+
 	lastTime = 0; lastIterations = 0
 	print "Doing %d iterations" % iterations
 	for i in range(iterations):						# Do some training
@@ -143,9 +145,12 @@ def train(session,trainingData,testingData,input,truth,cost,trainingStep,accurac
 
 			# Test accuracy for TensorBoard
 #			testDict.update({input:testingData.images,truth:testingData.labels})
-			summary,testAccuracy = session.run([mergedSummary,accuracy],feed_dict=testDict)
-			if logName is not None:
-				writer.add_summary(summary,i)
+			if addSummaryOps:
+				summary,testAccuracy = session.run([mergedSummary,accuracy],feed_dict=testDict)
+				if logName is not None:
+					writer.add_summary(summary,i)
+			else:
+				testAccuracy = session.run([accuracy],feed_dict=testDict)[0]
 
 			print 'Accuracy at batch %d: %g (%g samples/s)' % (i,testAccuracy,(i-lastIterations)/(time.time()-lastTime)*miniBatch)
 			lastTime = time.time(); lastIterations = i
@@ -153,8 +158,12 @@ def train(session,trainingData,testingData,input,truth,cost,trainingStep,accurac
 		trainDict.update({input:batch[0],truth:batch[1]})
 		trainingStep.run(feed_dict=trainDict)
 
-	testDict.update({input:testingData.images, truth:testingData.labels})
-	print 'Test accuracy: %g' % accuracy.eval(feed_dict=testDict)
+	try:
+		# Only works with mnist-type data object
+		testDict.update({input:testingData.images, truth:testingData.labels})
+		print 'Test accuracy: %g' % accuracy.eval(feed_dict=testDict)
+	except:
+		pass
 	
 
 
@@ -188,6 +197,28 @@ class UtilityLayer(Layer):
 		self.initialize()
 		self.setupOutput()
 		self.setupSummary()
+
+
+class Linear(Layer):
+
+	def initialize(self):
+		with tf.variable_scope(self.name):
+			self.inputShape = np.product([i.value for i in self.input.get_shape()[1:] if i.value is not None])
+			self.W = weightVariable([self.inputShape,self.units])
+			self.b = biasVariable([self.units])
+
+	def setupOutput(self):
+		if len(self.input.get_shape()) > 2:
+			input = tf.reshape(self.input,[-1,self.inputShape])	# flatten reduced image into a vector
+		else:
+			input = self.input
+		self.output = tf.matmul(input,self.W)
+
+	def setupSummary(self):
+		self.WHist = tf.histogram_summary("%s/weights" % self.name, self.W)
+		self.BHist = tf.histogram_summary("%s/biases" % self.name, self.b)
+		self.outputHist = tf.histogram_summary("%s/output" % self.name, self.output)
+
 
 		
 class SoftMax(Layer):
@@ -245,27 +276,45 @@ class Conv2D(SoftMax):
 class ConvSoftMax(Conv2D):
 
 	def setupOutput(self):
-		self.output = tf.nn.softmax(conv2d(self.input,self.W) + self.b)
+		inputShape = self.input.get_shape()
+		convResult = conv2d(self.input,self.W) + self.b
 
+		convResult = tf.reshape(convResult,[-1,self.units])	# flatten reduced image into a vector
+		softMaxed = tf.nn.softmax(convResult)
+		self.output = tf.reshape(softMaxed,[-1] + inputShape[1:3].as_list() + [self.units])
 
 
 
 class MaxPool2x2(UtilityLayer):
 
-	def initialize(self):
+	def setupOutput(self):
 		with tf.variable_scope(self.name):
 			self.output = max_pool_2x2(self.input)
+			
 
 
 class MaxPool(UtilityLayer):
 	
-	def __init__(self,input,name,shape=[2,2]):
+	def __init__(self,input,shape,name):
 		self.shape = shape
 		super(MaxPool,self).__init__(input,name)
 
-	def initialize(self):
+	def setupOutput(self):
 		with tf.variable_scope(self.name):
 			self.output = max_pool(self.input,shape=self.shape)
+			
+			
+class Resample(UtilityLayer):
+	
+	def __init__(self,input,outputShape,name,method=tf.image.ResizeMethod.BICUBIC,alignCorners=True):
+		self.outputShape = outputShape
+		self.method = method
+		self.alignCorners = alignCorners
+		super(Resample,self).__init__(input,name)
+		
+	def setupOutput(self):
+		with tf.variable_scope(self.name):
+			self.output = tf.image.resize_images(self.input,self.outputShape[0],self.outputShape[1],method=self.method)#,align_corners=self.alignCorners)
 
 
 class Dropout(UtilityLayer):
@@ -273,11 +322,14 @@ class Dropout(UtilityLayer):
 	def __init__(self,input,name):
 		self.input = input
 		self.name = name
-		self.initialize()
+		super(Dropout,self).__init__(input,name)
 		
 	def initialize(self):
 		with tf.variable_scope(self.name):
 			self.keepProb = tf.placeholder('float')			# Variable to hold the dropout probability
+		
+	def setupOutput(self):
+		with tf.variable_scope(self.name):
 			self.output = tf.nn.dropout(self.input,self.keepProb)
 			self.output.get_shape = self.input.get_shape		# DEBUG: remove this whenever TensorFlow fixes this bug
 
