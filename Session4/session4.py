@@ -19,8 +19,6 @@ class MNISTModifier(object):
 class Container(object):
 	pass
 
-temp = Container(); temp.train = MNISTModifier(mnist.train); temp.test = MNISTModifier(mnist.test)
-mnist = temp
 
 x = tf.placeholder('float',shape=[None,784],name='input')		# Input tensor
 y_ = tf.placeholder('float', shape=[None,11],name='correctLabels') 		# Correct labels
@@ -52,7 +50,7 @@ train(session=session,trainingData=mnist.train,testingData=mnist.test,truth=y_,i
 
 
 
-# Now turn out trained conv net into a fully convolutional network by replacing the fully
+# Now turn our trained conv net into a fully convolutional network by replacing the fully
 # connected layers (L5 and L6) with convoluational layers
 # Note that I'm copying the L5 and L6 weights and biases into the new layers
 
@@ -177,10 +175,8 @@ truthDownsampleLayer = Resample(y_2,L6fc.output.get_shape().as_list()[1:3],'ydow
 y2 = L6fc.output; y_2b = truthDownsampleLayer.output
 crossEntropy = -tf.reduce_sum(y_2b*tf.log(y2))		# cost function
 trainStep = tf.train.AdamOptimizer(1e-4).minimize(crossEntropy)
-correctPrediction = tf.equal(tf.argmax(y2,1), tf.argmax(y_2b,1))
+correctPrediction = tf.equal(tf.argmax(y2,3), tf.argmax(y_2b,3))
 accuracy = tf.reduce_mean(tf.cast(correctPrediction,'float'))
-
-trainingData = array([newImage,newImage]); truthData = array([truthImage,truthImage])
 
 tf.initialize_all_variables().run()
 
@@ -194,7 +190,7 @@ for i in range(iterations):						# Do some more training
 	if (i%100 == 0) or (time.time()-lastTime > 5):
 		testDict.update({x2:batch[0],y_2:batch[1]})
 		testAccuracy = session.run([accuracy],feed_dict=testDict)[0]
-		print 'Accuracy at batch %d: %g (%g samples/s)' % (i,testAccuracy,(i-lastIterations)/(time.time()-lastTime)*miniBatch)
+		print 'Accuracy at batch %d: %g (%g samples/s)' % (i,testAccuracy,(i-lastIterations)/(time.time()-lastTime)*batchSize)
 		lastTime = time.time(); lastIterations = i
 	
 	trainDict.update({x2:batch[0],y_2:batch[1]})
@@ -210,4 +206,4 @@ subplot(122); imshow(confidence,cmap=cm.gray); colorbar(); title('Strength of Id
 contour(newImage,[0.5],colors=['b'])
 
 figure(7); clf(); imshow(confidence*10,cmap=cm.gray); imshow(classification,vmin=0,vmax=10,alpha=0.3)
-contour(newImage,[0.5],colors=['b'])
+contour(newImage,[0.5],colors=['k'])

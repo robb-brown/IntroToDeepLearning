@@ -29,19 +29,23 @@ import numpy as np
 import time
 
 
-def weightVariable(shape,name=None):
+def weightVariable(shape,std=1.0,name=None):
 	# Create a set of weights initialized with truncated normal random values
 	name = 'weights' if name is None else name
-	return tf.get_variable(name,shape,initializer=tf.truncated_normal_initializer(stddev=1.0/math.sqrt(shape[0])))
+	return tf.get_variable(name,shape,initializer=tf.truncated_normal_initializer(stddev=std/math.sqrt(shape[0])))
 
-def biasVariable(shape,name=None):
+def biasVariable(shape,bias=0.1,name=None):
 	# create a set of bias nodes initialized with a constant 0.1
 	name = 'biases' if name is None else name
-	return tf.get_variable(name,shape,initializer=tf.constant_initializer(0.1))
+	return tf.get_variable(name,shape,initializer=tf.constant_initializer(bias))
 
 def conv2d(x,W,name=None):
 	# return an op that convolves x with W
 	return tf.nn.conv2d(x,W,strides=[1,1,1,1],padding='SAME',name=name)
+
+def conv3d(x,W,name=None):
+	# return an op that convolves x with W
+	return tf.nn.conv3d(x,W,strides=[1,1,1,1,1],padding='SAME',name=name)
 
 def max_pool_2x2(x,name=None):
 	# return an op that performs max pooling across a 2D image
@@ -50,6 +54,10 @@ def max_pool_2x2(x,name=None):
 def max_pool(x,shape,name=None):
 	# return an op that performs max pooling across a 2D image
 	return tf.nn.max_pool(x,ksize=[1]+shape+[1],strides=[1]+shape+[1],padding='SAME',name=name)
+
+def max_pool3d(x,shape,name=None):
+	# return an op that performs max pooling across a 2D image
+	return tf.nn.max_pool3d(x,ksize=[1]+shape+[1],strides=[1]+shape+[1],padding='SAME',name=name)
 	
 	
 def plotFields(layer,fieldShape=None,channel=None,figOffset=1,cmap=None,padding=0.01):
@@ -171,11 +179,11 @@ def train(session,trainingData,testingData,input,truth,cost,trainingStep,accurac
 
 class Layer(object):
 	
-	def __init__(self,input,units,name):
+	def __init__(self,input,units,name,std=1.0,bias=0.1):
 		self.input = input
 		self.units = units
 		self.name = name
-		self.initialize()
+		self.initialize(std=std,bias=bias)
 		self.setupOutput()
 		self.setupSummary()
 		
@@ -200,12 +208,12 @@ class UtilityLayer(Layer):
 
 
 class Linear(Layer):
-
-	def initialize(self):
+	
+	def initialize(self,std=1.0,bias=0.1):
 		with tf.variable_scope(self.name):
 			self.inputShape = np.product([i.value for i in self.input.get_shape()[1:] if i.value is not None])
-			self.W = weightVariable([self.inputShape,self.units])
-			self.b = biasVariable([self.units])
+			self.W = weightVariable([self.inputShape,self.units],std=std)
+			self.b = biasVariable([self.units],bias=bias)
 
 	def setupOutput(self):
 		if len(self.input.get_shape()) > 2:
@@ -223,11 +231,11 @@ class Linear(Layer):
 		
 class SoftMax(Layer):
 	
-	def initialize(self):
+	def initialize(self,std=1.0,bias=0.1):
 		with tf.variable_scope(self.name):
 			self.inputShape = np.product([i.value for i in self.input.get_shape()[1:] if i.value is not None])
-			self.W = weightVariable([self.inputShape,self.units])
-			self.b = biasVariable([self.units])
+			self.W = weightVariable([self.inputShape,self.units],std=std)
+			self.b = biasVariable([self.units],bias=bias)
 				
 	def setupOutput(self):
 		if len(self.input.get_shape()) > 2:
@@ -254,20 +262,20 @@ class ReLu(SoftMax):
 
 class Conv2D(SoftMax):
 
-	def __init__(self,input,shape,name):
+	def __init__(self,input,shape,name,std=1.0,bias=0.1):
 		self.input = input
 		self.units = shape[-1]
 		self.shape = shape
 		self.name = name
-		self.initialize()
+		self.initialize(std=std,bias=bias)
 		self.setupOutput()
 		self.setupSummary()
 
 	
-	def initialize(self):
+	def initialize(self,std=1.0,bias=0.1):
 		with tf.variable_scope(self.name):
-			self.W = weightVariable(self.shape)		# YxX patch, Z contrast, outputs to N neurons
-			self.b = biasVariable([self.shape[-1]])	# N bias variables to go with the N neurons
+			self.W = weightVariable(self.shape,std=std)		# YxX patch, Z contrast, outputs to N neurons
+			self.b = biasVariable([self.shape[-1]],bias=bias)	# N bias variables to go with the N neurons
 
 	def setupOutput(self):
 		self.output = tf.nn.relu(conv2d(self.input,self.W) + self.b)
@@ -282,6 +290,23 @@ class ConvSoftMax(Conv2D):
 		convResult = tf.reshape(convResult,[-1,self.units])	# flatten reduced image into a vector
 		softMaxed = tf.nn.softmax(convResult)
 		self.output = tf.reshape(softMaxed,[-1] + inputShape[1:3].as_list() + [self.units])
+
+
+class Conv3D(Conv2D):
+	
+	def setupOutput(self):
+		self.output = tf.nn.relu(conv3d(self.input,self.W) + self.b)
+
+
+class Conv3DSoftMax(ConvSoftMax):
+
+	def setupOutput(self):
+		inputShape = self.input.get_shape()
+		convResult = conv3d(self.input,self.W) + self.b
+
+		convResult = tf.reshape(convResult,[-1,self.units])	# flatten reduced image into a vector
+		softMaxed = tf.nn.softmax(convResult)
+		self.output = tf.reshape(softMaxed,[-1] + inputShape[1:4].as_list() + [self.units])
 
 
 
@@ -303,6 +328,23 @@ class MaxPool(UtilityLayer):
 		with tf.variable_scope(self.name):
 			self.output = max_pool(self.input,shape=self.shape)
 			
+
+class MaxPool3D(MaxPool):
+
+	def setupOutput(self):
+		with tf.variable_scope(self.name):
+			self.output = max_pool3d(self.input,shape=self.shape)
+
+
+class L2Norm(UtilityLayer):
+	
+	def __init__(self,input,name):
+		super(L2Norm,self).__init__(input,name)
+		
+	def setupOutput(self):
+		with tf.variable_scope(self.name):
+			self.output = tf.nn.l2_normalize(self.input,-1)
+
 			
 class Resample(UtilityLayer):
 	
