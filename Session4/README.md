@@ -5,9 +5,9 @@ The code for this session requires Python, Numpy, Matplotlib and TensorFlow.  Py
 
 Once you have Python installed, you can install the required modules with the following commands:
 
-```pip install Numpy
-pip install Matplotlib
-pip install TensorFlow```
+```pip install Numpy```
+```pip install Matplotlib```
+```pip install TensorFlow```
 
 If you installed TensorFlow prior to July 1, 2016, use the command:
 
