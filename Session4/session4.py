@@ -24,7 +24,7 @@ x = tf.placeholder('float',shape=[None,784],name='input')		# Input tensor
 y_ = tf.placeholder('float', shape=[None,11],name='correctLabels') 		# Correct labels
 
 xImage = tf.reshape(x,[-1,28,28,1])		# Reshape samples to 28x28x1 images
-trainingIterations = 500
+trainingIterations = 5000
 
 # Standard conv net from Session 3
 L1 = Conv2D(xImage,[5,5,1,32],'Conv1')
