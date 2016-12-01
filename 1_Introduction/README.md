@@ -1,0 +1,2 @@
+#An Intuitive Introduction to Artificial Neural Networks and Deep Learning
+These notes are an introduction to artificial neural networks, deep learning, and graph-based computation.  Code that was formerly located here has been moved to Session 2.
