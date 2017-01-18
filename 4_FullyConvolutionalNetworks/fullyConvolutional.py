@@ -31,7 +31,7 @@ x = tf.placeholder('float',shape=[None,784],name='input')		# Input tensor
 y_ = tf.placeholder('float', shape=[None,11],name='correctLabels') 		# Correct labels
 
 xImage = tf.reshape(x,[-1,28,28,1])		# Reshape samples to 28x28x1 images
-trainingIterations = 500
+trainingIterations = 1000
 
 # Standard conv net from Session 3
 L1 = Conv2D(xImage,[5,5,1,32],'Conv1')
@@ -75,13 +75,12 @@ L6fc.setupOutput()
 L7 = Resample(L6fc.output,L1.input.get_shape().as_list()[1:3],'upsample')
 
 
-
 # Choose an example and show it for comparison
 example = mnist.test.next_batch(1); image = reshape(example[0][0],(28,28))
 feed_dict = {x:example[0],y_:example[1],L0do.keepProb:1.0}
 
 # Regular convolutional network
-figure(1); clf(); subplot(231); imshow(image,cmap=cm.gray); title('Correct is %d' % where(example[1]>0)[1][0])
+figure('Convolutional Network'); clf(); subplot(231); imshow(image,cmap=cm.gray); title('Correct is %d' % where(example[1]>0)[1][0])
 subplot(232); plotOutput(L1,feed_dict=feed_dict,cmap=cm.inferno,figOffset=None);
 subplot(233); plotOutput(L2,feed_dict=feed_dict,cmap=cm.inferno,figOffset=None);
 subplot(235); plotOutput(L3,feed_dict=feed_dict,cmap=cm.inferno,figOffset=None);
@@ -89,7 +88,7 @@ subplot(236); plotOutput(L4,feed_dict=feed_dict,cmap=cm.inferno,figOffset=None);
 subplot(234); plotOutput(L6,fieldShape=[11,1],feed_dict=feed_dict,cmap=cm.inferno,figOffset=None);
 
 # Fully convolutional network
-figure(2); clf(); subplot(121); imshow(np.argmax(L7.output.eval(feed_dict=feed_dict),axis=-1)[0],vmin=0,vmax=10); colorbar(); title('Digit Identification')
+figure('Fully Convolutional Network'); clf(); subplot(121); imshow(np.argmax(L7.output.eval(feed_dict=feed_dict),axis=-1)[0],vmin=0,vmax=10); colorbar(); title('Digit Identification')
 contour(image,[0.5],colors=['k'])
 subplot(122); imshow(np.max(L7.output.eval(feed_dict=feed_dict),axis=-1)[0],cmap=cm.gray); colorbar(); title('Strength of Identification')
 contour(image,[0.5],colors=['b'])
@@ -115,7 +114,7 @@ for i in range(iterations):						# Do some more training
 
 
 # Plot again and see the difference
-figure(3); clf(); subplot(121); imshow(np.argmax(L7.output.eval(feed_dict=feed_dict),axis=-1)[0],vmin=0,vmax=10); colorbar(); title('Digit Identification')
+figure('Fully Convolutional Network With Null Images'); clf(); subplot(121); imshow(np.argmax(L7.output.eval(feed_dict=feed_dict),axis=-1)[0],vmin=0,vmax=10); colorbar(); title('Digit Identification')
 contour(image,[0.5],colors=['k'])
 subplot(122); imshow(np.max(L7.output.eval(feed_dict=feed_dict),axis=-1)[0],cmap=cm.gray); colorbar(); title('Strength of Identification')
 contour(image,[0.5],colors=['b'])
@@ -147,7 +146,7 @@ height = width = 100
 newImage,truthImage = makeBigImage(data = mnist.train,Ndigits=5,width=width,height=height,overlap=False)
 
 # What's it look like?
-figure(4); clf(); subplot(121); imshow(newImage); subplot(122); imshow(np.argmax(truthImage,axis=-1),vmin=0,vmax=10)
+figure('Big Image and Truth'); clf(); subplot(121); imshow(newImage,cmap=cm.gray); subplot(122); imshow(np.argmax(truthImage,axis=-1),vmin=0,vmax=10); colorbar()
 
 # We need new placeholders to hold the bigger image
 x2 = tf.placeholder('float',shape=[None,height,width],name='input2')		# Input tensor; we shouldn't need to specify dimensions except TensorFlow....
@@ -167,7 +166,7 @@ L7 = Resample(L6fc.output,L1.input.get_shape().as_list()[1:3],'upsample2')
 
 # Forward prop
 feed_dict = {x2:[newImage],y_2:[truthImage],L0do.keepProb:1.0}
-figure(5); clf(); subplot(121); imshow(np.argmax(L7.output.eval(feed_dict=feed_dict),axis=-1)[0],vmin=0,vmax=10); colorbar(); title('Digit Identification')
+figure('Before We Train The FC Net'); clf(); subplot(121); imshow(np.argmax(L7.output.eval(feed_dict=feed_dict),axis=-1)[0],vmin=0,vmax=10); colorbar(); title('Digit Identification')
 contour(newImage,[0.5],colors=['k'])
 subplot(122); imshow(np.max(L7.output.eval(feed_dict=feed_dict),axis=-1)[0],cmap=cm.gray); colorbar(); title('Strength of Identification')
 contour(newImage,[0.5],colors=['b'])
@@ -207,10 +206,10 @@ for i in range(iterations):						# Do some more training
 feed_dict = {x2:[newImage],y_2:[truthImage],L0do.keepProb:1.0}
 classification = np.argmax(L7.output.eval(feed_dict=feed_dict),axis=-1)[0]
 confidence = np.max(L7.output.eval(feed_dict=feed_dict),axis=-1)[0]
-figure(6); clf(); subplot(121); imshow(classification,vmin=0,vmax=10); colorbar(); title('Digit Identification')
+figure('After FC Net Trained'); clf(); subplot(121); imshow(classification,vmin=0,vmax=10); colorbar(); title('Digit Identification')
 contour(newImage,[0.5],colors=['k'])
 subplot(122); imshow(confidence,cmap=cm.gray); colorbar(); title('Strength of Identification')
 contour(newImage,[0.5],colors=['b'])
 
-figure(7); clf(); imshow(confidence*10,cmap=cm.gray); imshow(classification,vmin=0,vmax=10,alpha=0.3)
+figure('Final Output'); clf(); imshow(confidence*10,cmap=cm.gray); imshow(classification,vmin=0,vmax=10,alpha=0.3); colorbar()
 contour(newImage,[0.5],colors=['k'])

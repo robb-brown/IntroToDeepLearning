@@ -356,7 +356,7 @@ class Resample(UtilityLayer):
 		
 	def setupOutput(self):
 		with tf.variable_scope(self.name):
-			self.output = tf.image.resize_images(self.input,self.outputShape[0],self.outputShape[1],method=self.method)#,align_corners=self.alignCorners)
+			self.output = tf.image.resize_images(self.input,(self.outputShape),method=self.method)#,align_corners=self.alignCorners)
 
 
 class Dropout(UtilityLayer):
