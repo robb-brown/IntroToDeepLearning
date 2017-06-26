@@ -1,5 +1,7 @@
 # Notes for the Practical Deep Learning Series
-This repo contains workshop notes and code from the Practical Deep Learning Series with the Toronto Data Literacy Group.
+This repo contains workshop notes and code from a deep learning seminar series, first presented as the Practical Deep Learning Series with the Toronto Data Literacy Group.
+
+A presentation of this workshop was also livestreamed from the Montreal Neurological Institute Brain Imaging Centre. The video (8 hours, uncut) is available <a href="https://www.mcgill.ca/bic/channels/news/bic-deep-learning-educational-workshop-265598">here</a> (free registration required).
 
 Session 1 discuses background theory for artificial neural networks (ANNs), deep learning, and computation graph based libraries, particularly Google's TensorFlow.  
 
