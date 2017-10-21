@@ -13,17 +13,24 @@ Session 4 and 5 are under development, but cover fully convolutional networks an
 
 INSTALLATION
 
-1) If you do not already have a copy of python 3.5+, 
+1) If you do not already have a copy of python 3.6+, install it from <a href="www.python.org">python.org</a> or your Linux distribution's package manager.
 
-1) Download or clone this repository
+2) Download or clone this repository
 
-2) From the main directory (the one with 1_Introduction, 2_Perceptron, etc.) type:
+3) From the main directory (the one with 1_Introduction, 2_Perceptron, etc.) type:
 
 pip install -e tfs
 
 This command should install the code for this workshop plus the dependencies numpy and matplotlib.  The -e is optional, but installs the package with links so that if you update your github clone it will automatically update the installed module as well. Tensorflow is NOT installed as a dependency in this step because it is not available through pip for all systems.
 
-3) Install tensorflow by following the platform specific instructions for your system at https://www.tensorflow.org/install/.  Note that if you are using a Mac, pip install tensorflow will not work... you will have to use the alternate method.
+4) Install tensorflow by following the platform specific instructions for your system at https://www.tensorflow.org/install/.  Note that if you are using a Mac, pip install tensorflow will not work... you will have to use the alternate method.
+
+5) if you change into the directory 2_Perceptron and type:
+
+python perceptronMNIST.py
+
+you should see a series of lines printed similar to "Accuracy at step 100: train: 0.77999997139".
+
 
 
 The CC-BY-ND license applies to the workshop notes only, not the code.  The code is licensed under the MIT three-clause license (included here at in each source file) where applicable.  The code in the file "input_data.py" found in Session1 is redistributed verbatim from <a href="www.tensorflow.com">Google's TensorFlow tutorial</a> where it appears to be unlicensed.  This code appears to originate with <a href="http://yann.lecun.com/exdb/mnist/">Yann LeCun</a>.
