@@ -24,7 +24,7 @@ SOFTWARE.
 
 import tensorflow as tf
 import math
-import input_data
+from tfs import input_data
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
 # Common setup
@@ -88,9 +88,9 @@ for i in range(1000):						# Do some training
 	batch = mnist.train.next_batch(100)
 	if i%100 == 0:
 		train_accuracy = accuracy.eval(feed_dict={x:batch[0],y_:batch[1]})		
-		print 'Accuracy at step %d: train: %g' % (i,train_accuracy)
+		print('Accuracy at step {}: train: {}'.format(i,train_accuracy))
 	
 	train_step.run(feed_dict={x:batch[0],y_:batch[1]})
 
-print 'Test accuracy: %g' % accuracy.eval(feed_dict={x:mnist.test.images, y_:mnist.test.labels})
+print('Test accuracy: {}'.format(accuracy.eval(feed_dict={x:mnist.test.images, y_:mnist.test.labels})))
 

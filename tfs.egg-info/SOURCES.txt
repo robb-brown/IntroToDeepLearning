@@ -1,0 +1,10 @@
+README.md
+tfs/TensorFlowInterface.py
+tfs/__init__.py
+tfs/input_data.py
+tfs.egg-info/PKG-INFO
+tfs.egg-info/SOURCES.txt
+tfs.egg-info/dependency_links.txt
+tfs.egg-info/not-zip-safe
+tfs.egg-info/requires.txt
+tfs.egg-info/top_level.txt

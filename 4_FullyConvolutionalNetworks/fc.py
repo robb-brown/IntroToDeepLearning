@@ -1,5 +1,5 @@
-from TensorFlowInterface import *
-import input_data
+from tfs import *
+from tfs import input_data
 from pylab import *
 from numpy import *
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
@@ -79,19 +79,19 @@ trainStep = tf.train.AdamOptimizer(1e-4).minimize(crossEntropy)
 correctPrediction = tf.equal(tf.argmax(y2,3), tf.argmax(y_2b,3))
 accuracy = tf.reduce_mean(tf.cast(correctPrediction,'float'))
 
-print "Training Image recognizer"
+print("Training Image recognizer")
 iterations = trainingIterations; batchSize = 2
 lastTime = 0; lastIterations = 0; trainingStep=trainStep; accuracy=accuracy;
-tf.initialize_all_variables().run()
+tf.global_variables_initializer().run()
 
 for i in range(iterations):						# Do some more training
 	# batchIndices = random.choice(range(0,len(trainingData)),batchSize)
 	# batch = [trainingData[batchIndices],truthData[batchIndices]]
-	batch = zip(*[makeBigImage(data=mnist.train,Ndigits=5,width=width,height=height,overlap=False) for j in range(0,3)])
+	batch = list(zip(*[makeBigImage(data=mnist.train,Ndigits=5,width=width,height=height,overlap=False) for j in range(0,3)]))
 	if (i%100 == 0) or (time.time()-lastTime > 5):
 		testDict.update({x2:batch[0],y_2:batch[1]})
 		testAccuracy = session.run([accuracy],feed_dict=testDict)[0]
-		print 'Accuracy at batch %d: %g (%g samples/s)' % (i,testAccuracy,(i-lastIterations)/(time.time()-lastTime)*batchSize)
+		print('Accuracy at batch {}: {} ({} samples/s)'.format(i,testAccuracy,(i-lastIterations)/(time.time()-lastTime)*batchSize))
 		lastTime = time.time(); lastIterations = i
 	
 	trainDict.update({x2:batch[0],y_2:batch[1]})
