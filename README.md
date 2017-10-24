@@ -13,6 +13,16 @@ Session 4 and 5 are under development, but cover fully convolutional networks an
 
 INSTALLATION
 
+Prerequisites:
+
+If you are using Linux, make sure you have a compiler toolchain installed (e.g. gcc).  Generally Linux distributions come with this installed by default.
+
+If on OS X, you will need the developer tools from Apple installed.  If you're on a recent version of OS X (El Capitan +) you can install just the command line tools by following the instructions at <a href="http://osxdaily.com/2014/02/12/install-command-line-tools-mac-os-x/">http://osxdaily.com/2014/02/12/install-command-line-tools-mac-os-x/</a>.
+
+If you're using Windows, you will also need to install gcc.  The easiest way to do this is probably to get the Anaconda Python distribution from <a href="https://anaconda.org/anaconda/python">https://anaconda.org/anaconda/python</a>. If you're using Anaconda, replace "pip install" with "conda install" in the following instructions.  If you have difficulty installing TensorFlow with conda, try pip install instead.
+
+Installation instructions:
+
 1) If you do not already have a copy of python 3.6+, install it from <a href="www.python.org">python.org</a> or your Linux distribution's package manager.
 
 2) Download or clone this repository
