@@ -1,0 +1,8 @@
+*.pyc
+support
+support/*
+*.egg-info
+logs
+logs/*
+data
+data/*
