@@ -55,7 +55,7 @@ class CCData(object):
 		else:
 			batch = random.choice(arange(0,len(self.paths)),miniBatch)
 		images = [self.getSlices(self.paths[i]) for i in batch]
-		return zip(*images)
+		return list(zip(*images))
 		
 
 class Container(object):
