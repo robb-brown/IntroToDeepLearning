@@ -70,7 +70,7 @@ class Container(object):
 
 data = Container(dataPath,reserve=2,padding=3)
 
-trainingIterations = 2000
+trainingIterations = 5000
 
 x = tf.placeholder('float',shape=[None,None,None],name='input')
 y_ = tf.placeholder('float', shape=[None,None,None],name='truth')
@@ -167,7 +167,7 @@ train(session=session,trainingData=data.train,testingData=data.test,truth=y_,inp
 
 # Make a figure
 # Get a couple of examples
-batch = data.train.next_batch(2)
+batch = data.test.next_batch(2)
 ex = array(batch[0])
 segmentation = y.eval({x:ex})
 

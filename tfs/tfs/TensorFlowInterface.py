@@ -81,7 +81,10 @@ def max_pool3d(x,shape,name=None):
 	
 def plotFields(layer,fieldShape=None,channel=None,figOffset=1,cmap=None,padding=0.01):
 	# Receptive Fields Summary
-	W = layer.W
+	try:
+		W = layer.W
+	except:
+		W = layer
 	wp = W.eval().transpose();
 	if len(np.shape(wp)) < 4:		# Fully connected layer, has no shape
 		fields = np.reshape(wp,list(wp.shape[0:-1])+fieldShape)	
@@ -120,7 +123,10 @@ def plotFields(layer,fieldShape=None,channel=None,figOffset=1,cmap=None,padding=
 
 def plotOutput(layer,feed_dict,fieldShape=None,channel=None,figOffset=1,cmap=None):
 	# Output summary
-	W = layer.output
+	try:
+		W = layer.output
+	except:
+		W = layer
 	wp = W.eval(feed_dict=feed_dict);
 	if len(np.shape(wp)) < 4:		# Fully connected layer, has no shape
 		temp = np.zeros(np.product(fieldShape)); temp[0:np.shape(wp.ravel())[0]] = wp.ravel()
