@@ -12,10 +12,29 @@ dataPath = '/Volumes/PACS/data/corpusCallosum'
 
 
 # Class to serve up segmented images
+def computePad(dims,depth):
+	y1=y2=x1=x2=0; 
+	y,x = [numpy.ceil(dims[i]/float(2**depth)) * (2**depth) for i in range(-2,0)]
+	x = float(x); y = float(y);
+	y1 = int(numpy.floor((y - dims[-2])/2)); y2 = int(numpy.ceil((y - dims[-2])/2))
+	x1 = int(numpy.floor((x - dims[-1])/2)); x2 = int(numpy.ceil((x - dims[-1])/2))
+	return y1,y2,x1,x2
+
+
+def padImage(img,depth):
+	"""Pads (or crops) an image so it is evenly divisible by 2**depth."""
+	y1,y2,x1,x2 = computePad(img.shape,depth)
+	dims = [(0,0) for i in img.shape]
+	dims[-2] = (y1,y2); dims[-1] = (x1,x2)
+	return numpy.pad(img,dims,'constant')
+
+
+# Class to serve up segmented images
 class CCData(object):
 	
-	def __init__(self,paths):
+	def __init__(self,paths,padding=None):
 		self.paths = paths
+		self.padding = padding
 	
 	def getSlices(self,paths):
 		image,truth = paths
@@ -24,7 +43,11 @@ class CCData(object):
 		sliceAxis = argmin([len(s) for s in slicesWithValues])
 		slicesWithValues = slicesWithValues[sliceAxis]
 		slc = repeat(-1,3); slc[sliceAxis] = slicesWithValues[0]
-		return (image[slc][0],truth[slc][0])
+		if not self.padding is None:
+			image, truth = [padImage(im,self.padding) for im in (image[slc][0],truth[slc][0])]
+		else:
+			image, truth = (image[slc][0],truth[slc][0])
+		return (image,truth)
 	
 	def next_batch(self,miniBatch=None):
 		if miniBatch is None or miniBatch==len(self.paths):
@@ -37,12 +60,13 @@ class CCData(object):
 
 class Container(object):
 
-	def __init__(self,dataPath,reserve=2):
+	def __init__(self,dataPath,reserve=2,**args):
 		self.dataPath = dataPath
 		images = glob.glob(os.path.join(dataPath,'?????.nii.gz'))
 		images = [(i,i.replace('.nii.gz','_cc.nii.gz')) for i in images]
-		self.train = CCData(images[0:-reserve])
-		self.test = CCData(images[reserve:])
+		self.train = CCData(images[0:-reserve],**args)
+		self.test = CCData(images[reserve:],**args)
+
 
 
 data = Container(dataPath,reserve=2)

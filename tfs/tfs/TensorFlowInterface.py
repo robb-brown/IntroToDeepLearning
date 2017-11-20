@@ -39,13 +39,32 @@ def biasVariable(shape,bias=0.1,name=None):
 	name = 'biases' if name is None else name
 	return tf.get_variable(name,shape,initializer=tf.constant_initializer(bias))
 
-def conv2d(x,W,name=None):
+def conv2d(x,W,strides=[1,1,1,1],name=None):
 	# return an op that convolves x with W
-	return tf.nn.conv2d(x,W,strides=[1,1,1,1],padding='SAME',name=name)
+	strides = np.array(strides)
+	if strides.size == 1:
+		strides = np.array([1,strides,strides,1])
+	elif strides.size == 2:
+		strides = np.array([1,strides[0],strides[1],1])
+	if np.any(strides < 1):
+		strides = np.around(1./strides).astype(np.uint8)
+		return tf.nn.conv2d_transpose(x,W,strides=strides.tolist(),padding='SAME',name=name)
+	else:
+		return tf.nn.conv2d(x,W,strides=strides.tolist(),padding='SAME',name=name)
+	
 
-def conv3d(x,W,name=None):
+def conv3d(x,W,strides=1,name=None):
 	# return an op that convolves x with W
-	return tf.nn.conv3d(x,W,strides=[1,1,1,1,1],padding='SAME',name=name)
+	strides = np.array(strides)
+	if strides.size == 1:
+		strides = np.array([1,strides,strides,strides[0],1])
+	elif strides.size == 3:
+		strides = np.array([1,strides[0],strides[1],strides[2],1])
+	if np.any(strides < 1):
+		strides = np.around(1./strides).astype(np.uint8)
+		return tf.nn.conv3d_transpose(x,W,strides=strides.tolist(),padding='SAME',name=name)
+	else:
+		return tf.nn.conv3d(x,W,strides=strides.tolist(),padding='SAME',name=name)
 
 def max_pool_2x2(x,name=None):
 	# return an op that performs max pooling across a 2D image
@@ -156,13 +175,13 @@ def train(session,trainingData,testingData,input,truth,cost,trainingStep,accurac
 			# Test accuracy for TensorBoard
 #			testDict.update({input:testingData.images,truth:testingData.labels})
 			if addSummaryOps:
-				summary,testAccuracy = session.run([mergedSummary,accuracy],feed_dict=testDict)
+				summary,testAccuracy,testCost = session.run([mergedSummary,accuracy,cost],feed_dict=testDict)
 				if logName is not None:
 					writer.add_summary(summary,i)
 			else:
-				testAccuracy = session.run([accuracy],feed_dict=testDict)[0]
+				testAccuracy,testCost = session.run([accuracy,cost],feed_dict=testDict)[0]
 
-			print('Accuracy at batch {}: {} ({} samples/s)'.format(i,testAccuracy,(i-lastIterations)/(time.time()-lastTime)*miniBatch))
+			print('At batch {}: accuracy: {} cost: {} ({} samples/s)'.format(i,testAccuracy,testCost,(i-lastIterations)/(time.time()-lastTime)*miniBatch))
 			lastTime = time.time(); lastIterations = i
 
 		trainDict.update({input:batch[0],truth:batch[1]})
@@ -264,10 +283,11 @@ class ReLu(SoftMax):
 
 class Conv2D(SoftMax):
 
-	def __init__(self,input,shape,name,std=1.0,bias=0.1):
+	def __init__(self,input,shape,name,strides=[1,1,1,1],std=1.0,bias=0.1):
 		self.input = input
 		self.units = shape[-1]
 		self.shape = shape
+		self.strides = strides
 		self.name = name
 		self.initialize(std=std,bias=bias)
 		self.setupOutput()
@@ -280,24 +300,28 @@ class Conv2D(SoftMax):
 			self.b = biasVariable([self.shape[-1]],bias=bias)	# N bias variables to go with the N neurons
 
 	def setupOutput(self):
-		self.output = tf.nn.relu(conv2d(self.input,self.W) + self.b)
+		self.output = tf.nn.relu(conv2d(self.input,self.W,strides=self.strides) + self.b,name=self.name)
 
 
 class ConvSoftMax(Conv2D):
 
 	def setupOutput(self):
-		inputShape = self.input.get_shape()
-		convResult = conv2d(self.input,self.W) + self.b
-
-		convResult = tf.reshape(convResult,[-1,self.units])	# flatten reduced image into a vector
-		softMaxed = tf.nn.softmax(convResult)
-		self.output = tf.reshape(softMaxed,[-1] + inputShape[1:3].as_list() + [self.units])
+		self.output = tf.nn.softmax(conv2d(self.input,self.W) + self.b)
+		# inputShape = self.input.get_shape()
+		# convResult = conv2d(self.input,self.W) + self.b
+		# 
+		# convResult = tf.reshape(convResult,[-1,self.units])	# flatten reduced image into a vector
+		# softMaxed = tf.nn.softmax(convResult)
+		# self.output = tf.reshape(softMaxed,[-1] + inputShape[1:3].as_list() + [self.units])
 
 
 class Conv3D(Conv2D):
 	
+	def __init__(self,input,shape,name,strides=[1,1,1,1,1],std=1.0,bias=0.1):
+		super(Conv3D,self).__init__(input,shape,name,strides,std,bias)
+	
 	def setupOutput(self):
-		self.output = tf.nn.relu(conv3d(self.input,self.W) + self.b)
+		self.output = tf.nn.relu(conv3d(self.input,self.W,strides=self.strides) + self.b,name=self.name)
 
 
 class Conv3DSoftMax(ConvSoftMax):
