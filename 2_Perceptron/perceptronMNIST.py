@@ -36,9 +36,9 @@ y_ = tf.placeholder('float', shape=[None,10],name='correctLabels') 		# Correct l
 # MODEL DEFINITION
 
 # Softmax regression
-W = tf.Variable(tf.zeros([784,10]),name='W_logistic')
-b = tf.Variable(tf.zeros([10]),name='b_logistic')
-y = tf.nn.softmax(tf.matmul(x,W) + b)
+# W = tf.Variable(tf.zeros([784,10]),name='W_logistic')
+# b = tf.Variable(tf.zeros([10]),name='b_logistic')
+# y = tf.nn.softmax(tf.matmul(x,W) + b)
 
 # # Two-layer softmax regression
 # Wlin = tf.Variable(tf.truncated_normal([784,784],stddev= 1.0 / math.sqrt(784)),name='W_linear')
@@ -59,18 +59,18 @@ y = tf.nn.softmax(tf.matmul(x,W) + b)
 # y = tf.nn.softmax(tf.matmul(y_intermediate,W) + b)
 
 # # Three-layer Deep Network
-# hiddenUnitN1 = 200; hiddenUnitN2 = 200
-# W1 = tf.Variable(tf.truncated_normal([784,hiddenUnitN1],stddev= 1.0 / math.sqrt(hiddenUnitN1)),name='W1')
-# b1 = tf.Variable(tf.zeros([hiddenUnitN1]),name='b1')
-# hiddenLayer1 = tf.nn.relu(tf.matmul(x,W1) + b1)
-# 
-# W2 = tf.Variable(tf.truncated_normal([hiddenUnitN1,hiddenUnitN2],stddev= 1.0 / math.sqrt(hiddenUnitN2)),name='W2')
-# b2 = tf.Variable(tf.zeros([hiddenUnitN2]),name='b2')
-# hiddenLayer2 = tf.nn.relu(tf.matmul(hiddenLayer1,W2) + b2)
-# 
-# WSoftmax = tf.Variable(tf.zeros([hiddenUnitN2,10]),name='W_softmax')
-# bSoftmax = tf.Variable(tf.zeros([10]),name='b_softmax')
-# y = tf.nn.softmax(tf.matmul(hiddenLayer2,WSoftmax) + bSoftmax)
+hiddenUnitN1 = 200; hiddenUnitN2 = 200
+W1 = tf.Variable(tf.truncated_normal([784,hiddenUnitN1],stddev= 1.0 / math.sqrt(hiddenUnitN1)),name='W1')
+b1 = tf.Variable(tf.zeros([hiddenUnitN1]),name='b1')
+hiddenLayer1 = tf.nn.relu(tf.matmul(x,W1) + b1)
+
+W2 = tf.Variable(tf.truncated_normal([hiddenUnitN1,hiddenUnitN2],stddev= 1.0 / math.sqrt(hiddenUnitN2)),name='W2')
+b2 = tf.Variable(tf.zeros([hiddenUnitN2]),name='b2')
+hiddenLayer2 = tf.nn.relu(tf.matmul(hiddenLayer1,W2) + b2)
+
+WSoftmax = tf.Variable(tf.zeros([hiddenUnitN2,10]),name='W_softmax')
+bSoftmax = tf.Variable(tf.zeros([10]),name='b_softmax')
+y = tf.nn.softmax(tf.matmul(hiddenLayer2,WSoftmax) + bSoftmax)
 
 
 # END MODEL DEFINITION
@@ -84,7 +84,7 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction,'float'))
 
 tf.initialize_all_variables().run()		# Take initial values and actually put them in variables
 
-for i in range(1000):						# Do some training
+for i in range(3000):						# Do some training
 	batch = mnist.train.next_batch(100)
 	if i%100 == 0:
 		train_accuracy = accuracy.eval(feed_dict={x:batch[0],y_:batch[1]})		

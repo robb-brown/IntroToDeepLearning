@@ -7,7 +7,7 @@ import nibabel as nib
 matplotlib.interactive(True)
 session = tf.InteractiveSession()
 
-dataPath = '/Volumes/PACS/data/corpusCallosum'
+dataPath = './corpusCallosum/'
 
 
 
@@ -80,17 +80,42 @@ y_OneHot = tf.one_hot(indices=tf.cast(y_,tf.int32),depth=2,name='truthOneHot')
 xInput = tf.expand_dims(x,axis=3,name='xInput')
 
 
+
+#Standard conv net from Session 3 using new TensorFlow layers
+net = LD1 = tf.layers.conv2d(
+					inputs=xInput,
+					filters=2,
+					kernel_size=[5,5],
+					strides = 1,
+					padding = 'same',
+					activation=tf.nn.relu,
+					name='convD1'
+				)
+
+net = LSM = tf.layers.conv2d(
+					inputs=net,
+					filters=2,
+					kernel_size=[1,1],
+					strides = 1,
+					padding = 'same',
+					activation=tf.nn.softmax,
+					name='softmax'
+				)
+
+y = net
+logits = LD1
+loss = tf.losses.softmax_cross_entropy(onehot_labels=y_OneHot, logits=logits)
+
+
 trainDict = {}
 testDict = {}
 logName = None #logName = 'logs/Conv'
 
 
 # Training and evaluation
-loss = None
-
-trainStep = tf.train.AdamOptimizer(1e-4).minimize(loss)
+trainStep = tf.train.AdamOptimizer(1e-3).minimize(loss)
 correctPrediction = tf.equal(tf.argmax(y,1), tf.argmax(y_OneHot,1))
 accuracy = tf.reduce_mean(tf.cast(correctPrediction,'float'))
-train(session=session,trainingData=data.train,testingData=data.test,truth=y_OneHot,input=x,cost=loss,trainingStep=trainStep,accuracy=accuracy,iterations=trainingIterations,miniBatch=2,trainDict=trainDict,testDict=testDict,logName=logName)
+train(session=session,trainingData=data.train,testingData=data.test,truth=y_,input=x,cost=loss,trainingStep=trainStep,accuracy=accuracy,iterations=trainingIterations,miniBatch=2,trainDict=trainDict,testDict=testDict,logName=logName)
 
 
