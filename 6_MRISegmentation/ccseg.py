@@ -119,3 +119,20 @@ accuracy = tf.reduce_mean(tf.cast(correctPrediction,'float'))
 train(session=session,trainingData=data.train,testingData=data.test,truth=y_,input=x,cost=loss,trainingStep=trainStep,accuracy=accuracy,iterations=trainingIterations,miniBatch=2,trainDict=trainDict,testDict=testDict,logName=logName)
 
 
+
+# Make a figure
+# Get a couple of examples
+batch = data.test.next_batch(2)
+ex = array(batch[0])
+segmentation = y.eval({x:ex})
+
+# Display each example
+figure('Example 1'); clf()
+imshow(batch[0][0].transpose(),cmap=cm.gray,origin='lower left');
+#contour(batch[1][0].transpose(),alpha=0.5,color='g'); 
+contour(segmentation[0,:,:,1].transpose(),alpha=0.5,color='b')
+figure('Example 2'); clf()
+imshow(batch[0][1].transpose(),cmap=cm.gray,origin='lower left');
+#contour(batch[1][1].transpose(),alpha=0.5,color='g'); 
+contour(segmentation[1,:,:,1].transpose(),alpha=0.5,color='b')
+
