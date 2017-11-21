@@ -111,15 +111,6 @@ xInput = tf.expand_dims(x,axis=3,name='xInput')
 # 					activation=tf.nn.relu,
 # 					name='topRelu'
 # 				)
-# net = LSM = tf.layers.conv2d(
-# 					inputs=net,
-# 					filters=2,
-# 					kernel_size=[1,1],
-# 					strides = 1,
-# 					padding = 'same',
-# 					activation=tf.nn.softmax,
-# 					name='softmax'
-# 				)
 
 
 # ----------------------------------------  U Net ---------------------------------------
@@ -175,22 +166,12 @@ net = LTop = tf.layers.conv2d(
 					kernel_size=[5,5],
 					strides = 1,
 					padding = 'same',
-					activation=tf.nn.relu,
-					name='topRelu'
+					activation=None,
+					name='logits'
 				)
-net = LSM = tf.layers.conv2d(
-					inputs=net,
-					filters=2,
-					kernel_size=[1,1],
-					strides = 1,
-					padding = 'same',
-					activation=tf.nn.softmax,
-					name='softmax'
-				)
-
-
-y = net
+				
 logits = LTop
+y = tf.nn.softmax(logits,-1)
 
 kp = 0.5; trainDict = {}#{L0do.keepProb:kp}
 kp = 1.0; testDict = {}#{L0do.keepProb:kp}
@@ -199,6 +180,7 @@ logName = None #logName = 'logs/Conv'
 
 # Training and evaluation
 loss = tf.losses.softmax_cross_entropy(onehot_labels=y_OneHot, logits=logits)
+#loss = -tf.reduce_sum(y_OneHot*tf.log(y+1e-6))	
 trainStep = tf.train.AdamOptimizer(1e-3).minimize(loss)
 
 # Accuracy
@@ -219,6 +201,7 @@ train(session=session,trainingData=data.train,testingData=data.test,truth=y_,inp
 # Make a figure
 # Get a couple of examples
 batch = data.test.next_batch(2)
+d = {x:batch[0][0:1],y_:batch[1][0:1]}
 ex = array(batch[0])
 segmentation = y.eval({x:ex})
 

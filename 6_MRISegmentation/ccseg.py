@@ -92,18 +92,9 @@ net = LD1 = tf.layers.conv2d(
 					name='convD1'
 				)
 
-net = LSM = tf.layers.conv2d(
-					inputs=net,
-					filters=2,
-					kernel_size=[1,1],
-					strides = 1,
-					padding = 'same',
-					activation=tf.nn.softmax,
-					name='softmax'
-				)
-
-y = net
 logits = LD1
+y = tf.nn.softmax(logits,-1)
+
 loss = tf.losses.softmax_cross_entropy(onehot_labels=y_OneHot, logits=logits)
 
 
