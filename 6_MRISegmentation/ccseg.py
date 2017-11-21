@@ -114,8 +114,18 @@ logName = None #logName = 'logs/Conv'
 
 # Training and evaluation
 trainStep = tf.train.AdamOptimizer(1e-3).minimize(loss)
-correctPrediction = tf.equal(tf.argmax(y,1), tf.argmax(y_OneHot,1))
+
+# Accuracy
+correctPrediction = tf.equal(tf.argmax(y,axis=-1), tf.argmax(y_OneHot,axis=-1))
 accuracy = tf.reduce_mean(tf.cast(correctPrediction,'float'))
+
+# Jaccard
+output = tf.cast(tf.argmax(y,axis=-1), dtype=tf.float32)
+truth = tf.cast(tf.argmax(y_OneHot,axis=-1), dtype=tf.float32)
+intersection = tf.reduce_sum(tf.reduce_sum(tf.multiply(output, truth), axis=-1),axis=-1)
+union = tf.reduce_sum(tf.reduce_sum(tf.cast(tf.add(output, truth)>= 1, dtype=tf.float32), axis=-1),axis=-1)
+jaccard = tf.reduce_mean(intersection / union)
+
 train(session=session,trainingData=data.train,testingData=data.test,truth=y_,input=x,cost=loss,trainingStep=trainStep,accuracy=accuracy,iterations=trainingIterations,miniBatch=2,trainDict=trainDict,testDict=testDict,logName=logName)
 
 
@@ -135,4 +145,4 @@ figure('Example 2'); clf()
 imshow(batch[0][1].transpose(),cmap=cm.gray,origin='lower left');
 #contour(batch[1][1].transpose(),alpha=0.5,color='g'); 
 contour(segmentation[1,:,:,1].transpose(),alpha=0.5,color='b')
-
+plotOutput(LD1,{x:ex[0:1]},figOffset='Layer 1 Output')

@@ -10,7 +10,8 @@ setup(name='tfs',
 	packages=['tfs'],
 	install_requires=[
 		'numpy',
-		'matplotlib'
+		'matplotlib',
+		'nibabel',
 	],
 	zip_safe=False)
 

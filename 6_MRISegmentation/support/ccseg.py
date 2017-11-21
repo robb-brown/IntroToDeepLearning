@@ -9,7 +9,7 @@ import nibabel as nib
 matplotlib.interactive(True)
 session = tf.InteractiveSession()
 
-dataPath = './corpusCallosum/'
+dataPath = '../corpusCallosum/'
 
 
 def computePad(dims,depth):
@@ -55,7 +55,7 @@ class CCData(object):
 		else:
 			batch = random.choice(arange(0,len(self.paths)),miniBatch)
 		images = [self.getSlices(self.paths[i]) for i in batch]
-		return zip(*images)
+		return list(zip(*images))
 		
 
 class Container(object):
@@ -77,13 +77,53 @@ y_ = tf.placeholder('float', shape=[None,None,None],name='truth')
 y_OneHot = tf.one_hot(indices=tf.cast(y_,tf.int32),depth=2,name='truthOneHot')
 xInput = tf.expand_dims(x,axis=3,name='xInput')
 
-# Standard conv net from Session 3
+# ------------------------   Standard conv net from Session 3 ---------------------------------
 # net = LD1 = Conv2D(xInput,[5,5,1,10],strides=1,name='Conv1')
 # net = LD2 = Conv2D(net.output,[5,5,10,20],strides=1,name='Conv2')
 # net = LSM = ConvSoftMax(net.output,[1,1,20,2],name='softmax-conv')
 # y = net.output
 
-#Standard conv net from Session 3 using new TensorFlow layers
+# -------------------------  Standard conv net from Session 3 using new TensorFlow layers ---------------------------
+# net = LD1 = tf.layers.conv2d(
+# 					inputs=xInput,
+# 					filters=10,
+# 					kernel_size=[5,5],
+# 					strides = 1,
+# 					padding = 'same',
+# 					activation=tf.nn.relu,
+# 					name='convD1'
+# 				)
+# net = LD2 = tf.layers.conv2d(
+# 					inputs=net,
+# 					filters=20,
+# 					kernel_size=[5,5],
+# 					strides = 1,
+# 					padding = 'same',
+# 					activation=tf.nn.relu,
+# 					name='convD2'
+# 				)
+# net = LTop = tf.layers.conv2d(
+# 					inputs=net,
+# 					filters=2,
+# 					kernel_size=[5,5],
+# 					strides = 1,
+# 					padding = 'same',
+# 					activation=tf.nn.relu,
+# 					name='topRelu'
+# 				)
+# net = LSM = tf.layers.conv2d(
+# 					inputs=net,
+# 					filters=2,
+# 					kernel_size=[1,1],
+# 					strides = 1,
+# 					padding = 'same',
+# 					activation=tf.nn.softmax,
+# 					name='softmax'
+# 				)
+
+
+# ----------------------------------------  U Net ---------------------------------------
+
 net = LD1 = tf.layers.conv2d(
 					inputs=xInput,
 					filters=10,
@@ -148,6 +188,7 @@ net = LSM = tf.layers.conv2d(
 					name='softmax'
 				)
 
+
 y = net
 logits = LTop
 
@@ -158,11 +199,21 @@ logName = None #logName = 'logs/Conv'
 
 # Training and evaluation
 loss = tf.losses.softmax_cross_entropy(onehot_labels=y_OneHot, logits=logits)
-
 trainStep = tf.train.AdamOptimizer(1e-3).minimize(loss)
-correctPrediction = tf.equal(tf.argmax(y,1), tf.argmax(y_OneHot,1))
+
+# Accuracy
+correctPrediction = tf.equal(tf.argmax(y,axis=-1), tf.argmax(y_OneHot,axis=-1))
 accuracy = tf.reduce_mean(tf.cast(correctPrediction,'float'))
-train(session=session,trainingData=data.train,testingData=data.test,truth=y_,input=x,cost=loss,trainingStep=trainStep,accuracy=accuracy,iterations=trainingIterations,miniBatch=2,trainDict=trainDict,testDict=testDict,logName=logName)
+
+# Jaccard
+output = tf.cast(tf.argmax(y,axis=-1), dtype=tf.float32)
+truth = tf.cast(tf.argmax(y_OneHot,axis=-1), dtype=tf.float32)
+intersection = tf.reduce_sum(tf.reduce_sum(tf.multiply(output, truth), axis=-1),axis=-1)
+union = tf.reduce_sum(tf.reduce_sum(tf.cast(tf.add(output, truth)>= 1, dtype=tf.float32), axis=-1),axis=-1)
+jaccard = tf.reduce_mean(intersection / union)
+
+
+train(session=session,trainingData=data.train,testingData=data.test,truth=y_,input=x,cost=loss,trainingStep=trainStep,accuracy=jaccard,iterations=trainingIterations,miniBatch=2,trainDict=trainDict,testDict=testDict,logName=logName)
 
 
 # Make a figure
@@ -172,6 +223,7 @@ ex = array(batch[0])
 segmentation = y.eval({x:ex})
 
 # Display each example
+# Display each example
 figure('Example 1'); clf()
 imshow(batch[0][0].transpose(),cmap=cm.gray,origin='lower left');
 #contour(batch[1][0].transpose(),alpha=0.5,color='g'); 
@@ -180,5 +232,7 @@ figure('Example 2'); clf()
 imshow(batch[0][1].transpose(),cmap=cm.gray,origin='lower left');
 #contour(batch[1][1].transpose(),alpha=0.5,color='g'); 
 contour(segmentation[1,:,:,1].transpose(),alpha=0.5,color='b')
+plotOutput(LD1,{x:ex[0:1]},figOffset='Layer 1 Output')
+plotOutput(LD2,{x:ex[0:1]},figOffset='Layer 2 Output')
 
 
