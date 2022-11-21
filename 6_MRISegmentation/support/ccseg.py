@@ -217,5 +217,6 @@ imshow(batch[0][1].transpose(),cmap=cm.gray,origin='lower left');
 contour(segmentation[1,:,:,1].transpose(),alpha=0.5,color='b')
 plotOutput(LD1,{x:ex[0:1]},figOffset='Layer 1 Output')
 plotOutput(LD2,{x:ex[0:1]},figOffset='Layer 2 Output')
+plotOutput(LU1,{x:ex[0:1]},figOffset='Layer 2 Output')
 
 

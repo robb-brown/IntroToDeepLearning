@@ -6,3 +6,8 @@ data
 data/*
 *.nii
 *.nii.gz
+MNIST_data
+MNIST_data/*
+.DS_Store
+__pycache__
+__pycache__/*

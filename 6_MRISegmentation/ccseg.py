@@ -3,6 +3,7 @@ from pylab import *
 from numpy import *
 import glob, os
 import nibabel as nib
+import numpy
 
 matplotlib.interactive(True)
 session = tf.InteractiveSession()
@@ -69,7 +70,7 @@ class Container(object):
 
 
 
-data = Container(dataPath,reserve=2)
+data = Container(dataPath,reserve=2,padding=2)
 batch = data.train.next_batch(2)
 
 trainingIterations = 1000
@@ -84,7 +85,7 @@ xInput = tf.expand_dims(x,axis=3,name='xInput')
 #Standard conv net from Session 3 using new TensorFlow layers
 net = LD1 = tf.layers.conv2d(
 					inputs=xInput,
-					filters=2,
+					filters=4,
 					kernel_size=[5,5],
 					strides = 1,
 					padding = 'same',
@@ -92,7 +93,18 @@ net = LD1 = tf.layers.conv2d(
 					name='convD1'
 				)
 
-logits = LD1
+net = LO = tf.layers.conv2d(
+					inputs=net,
+					filters=2,
+					kernel_size=[5,5],
+					strides = 1,
+					padding = 'same',
+					activation=tf.nn.relu,
+					name='convLO'
+				)
+
+
+logits = LO
 y = tf.nn.softmax(logits,-1)
 
 loss = tf.losses.softmax_cross_entropy(onehot_labels=y_OneHot, logits=logits)
@@ -117,13 +129,14 @@ intersection = tf.reduce_sum(tf.reduce_sum(tf.multiply(output, truth), axis=-1),
 union = tf.reduce_sum(tf.reduce_sum(tf.cast(tf.add(output, truth)>= 1, dtype=tf.float32), axis=-1),axis=-1)
 jaccard = tf.reduce_mean(intersection / union)
 
-train(session=session,trainingData=data.train,testingData=data.test,truth=y_,input=x,cost=loss,trainingStep=trainStep,accuracy=accuracy,iterations=trainingIterations,miniBatch=2,trainDict=trainDict,testDict=testDict,logName=logName)
-
+train(session=session,trainingData=data.train,testingData=data.test,truth=y_,input=x,cost=loss,trainingStep=trainStep,accuracy=jaccard,iterations=trainingIterations,miniBatch=2,trainDict=trainDict,testDict=testDict,logName=logName)
+# Get a couple of test examples
+batch = data.test.next_batch(2)
+d = {x:batch[0][0:1],y_:batch[1][0:1]}
+print("Test set Jaccard Index: {}").format(jaccard.eval(d))
 
 
 # Make a figure
-# Get a couple of examples
-batch = data.test.next_batch(2)
 ex = array(batch[0])
 segmentation = y.eval({x:ex})
 
